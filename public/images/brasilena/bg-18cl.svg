@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 389 519" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="b18" cx="50%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#ffd83a"/>
+      <stop offset="100%" stop-color="#ffcc00"/>
+    </radialGradient>
+  </defs>
+  <rect width="389" height="519" fill="url(#b18)"/>
+  <g fill="#6a3f40">
+    <circle cx="64" cy="84" r="9" opacity="0.10"/>
+    <circle cx="326" cy="118" r="14" opacity="0.08"/>
+    <circle cx="92" cy="250" r="6" opacity="0.12"/>
+    <circle cx="320" cy="338" r="10" opacity="0.09"/>
+    <circle cx="56" cy="430" r="12" opacity="0.08"/>
+    <circle cx="284" cy="470" r="6" opacity="0.11"/>
+    <circle cx="170" cy="58" r="5" opacity="0.12"/>
+  </g>
+  <g fill="none" stroke="#6a3f40" stroke-width="2.5">
+    <circle cx="306" cy="206" r="22" opacity="0.10"/>
+    <circle cx="70" cy="332" r="15" opacity="0.10"/>
+    <circle cx="332" cy="416" r="10" opacity="0.10"/>
+    <circle cx="128" cy="150" r="7" opacity="0.12"/>
+    <circle cx="232" cy="496" r="6" opacity="0.12"/>
+  </g>
+</svg>
