@@ -107,20 +107,29 @@ export function StoryTimeline() {
         </span>
 
         <div className="relative z-10 mx-auto w-full max-w-[1320px] px-[clamp(1.25rem,6vw,6.25rem)] pt-[clamp(7rem,16vh,11rem)] pb-[clamp(3rem,7vw,6rem)]">
-          <span className="inline-flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.28em] text-brasilena-red">
+          <span className="reveal reveal-down inline-flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.28em] text-brasilena-red">
             <span className="h-px w-8 bg-brasilena-red" />
             {kicker}
           </span>
 
-          <h1 className="mt-6 max-w-[16ch] font-display uppercase leading-[0.82] text-[clamp(3rem,9vw,7.5rem)]">
+          <h1
+            className="reveal reveal-left mt-6 max-w-[16ch] font-display uppercase leading-[0.82] text-[clamp(3rem,9vw,7.5rem)]"
+            data-reveal-delay={100}
+          >
             {title}
           </h1>
 
-          <p className="mt-7 max-w-[48ch] font-sans text-[clamp(1.05rem,1.5vw,1.3rem)] leading-relaxed text-brasilena-ink/80">
+          <p
+            className="reveal mt-7 max-w-[48ch] font-sans text-[clamp(1.05rem,1.5vw,1.3rem)] leading-relaxed text-brasilena-ink/80"
+            data-reveal-delay={220}
+          >
             {lede}
           </p>
 
-          <span className="mt-10 inline-flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.28em] text-brasilena-ink/60">
+          <span
+            className="reveal mt-10 inline-flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.28em] text-brasilena-ink/60"
+            data-reveal-delay={340}
+          >
             <span className="grid size-9 place-items-center rounded-full border border-brasilena-ink/30">
               <span className="block size-1.5 animate-bounce rounded-full bg-brasilena-red" />
             </span>
@@ -192,8 +201,13 @@ function TimelineRow({ entry, index }: { entry: TimelineEntry; index: number }) 
         className="st-dot absolute left-[28px] top-1.5 size-4 -translate-x-1/2 rounded-full bg-brasilena-red ring-4 ring-brasilena-cream md:static md:col-start-2 md:translate-x-0 md:justify-self-center"
       />
 
-      {/* Media */}
-      <div className={cn("st-media", mediaLeft ? "md:col-start-1" : "md:col-start-3")}>
+      {/* Media — slides in from its own side of the spine */}
+      <div
+        className={cn(
+          "st-media reveal",
+          mediaLeft ? "reveal-left md:col-start-1" : "reveal-right md:col-start-3",
+        )}
+      >
         <TimelineMedia entry={entry} index={index} />
       </div>
 
@@ -210,14 +224,20 @@ function TimelineRow({ entry, index }: { entry: TimelineEntry; index: number }) 
         >
           {entry.year}
         </span>
-        <h2 className="reveal mt-2 font-display uppercase leading-[0.9] text-brasilena-ink text-[clamp(1.6rem,3vw,2.6rem)]">
+        <h2
+          className={cn(
+            "reveal mt-2 font-display uppercase leading-[0.9] text-brasilena-ink text-[clamp(1.6rem,3vw,2.6rem)]",
+            mediaLeft ? "reveal-right" : "reveal-left",
+          )}
+        >
           {entry.title}
         </h2>
         <p
           className={cn(
             "reveal mt-4 max-w-[46ch] font-sans text-[clamp(0.98rem,1.15vw,1.1rem)] leading-relaxed text-brasilena-ink/80",
-            mediaLeft ? "md:ml-0" : "md:ml-auto",
+            mediaLeft ? "reveal-right md:ml-0" : "reveal-left md:ml-auto",
           )}
+          data-reveal-delay={120}
         >
           {entry.text}
         </p>

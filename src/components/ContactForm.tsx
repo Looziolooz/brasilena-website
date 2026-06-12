@@ -70,12 +70,15 @@ export function ContactForm() {
         height={500}
         unoptimized
         aria-hidden="true"
+        data-parallax="0.14"
         className="pointer-events-none absolute bottom-[clamp(1rem,4vw,4rem)] right-[clamp(0.5rem,4vw,4rem)] h-[clamp(8rem,18vw,21rem)] w-auto object-contain drop-shadow-[0_14px_28px_rgba(106,63,64,0.28)]"
       />
 
       <div className="mx-auto flex min-h-[80vh] w-full max-w-3xl flex-col justify-center px-[clamp(1.25rem,6vw,6.25rem)] py-[clamp(4rem,9vw,8rem)]">
         {done ? (
-          <div className="reveal text-center">
+          // No `.reveal` here — this node mounts after useReveal's one-shot
+          // observer has run, so the class would leave it permanently hidden.
+          <div className="text-center">
             <h2 className="font-display text-brasilena-red uppercase leading-[0.85] text-[clamp(3rem,8vw,6rem)]">
               {FORM.successTitle}
             </h2>
@@ -85,7 +88,7 @@ export function ContactForm() {
           </div>
         ) : (
           <>
-            <header className="text-center">
+            <header className="reveal reveal-down text-center">
               <h2 className="font-display text-brasilena-red uppercase leading-[0.85] text-[clamp(3rem,8vw,6rem)]">
                 {FORM.title}
               </h2>

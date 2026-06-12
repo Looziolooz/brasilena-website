@@ -62,6 +62,30 @@ export function SmoothScroll() {
         effects: true,
         normalizeScroll: false,
       });
+
+      // Global parallax: any element flagged with `data-parallax="<depth>"`
+      // drifts vertically at a different speed than the page (scrub ties it to
+      // the scrollbar). Depth ~0.05 = subtle, ~0.2 = pronounced. Transform-only,
+      // and desktop/motion-safe only since it lives in this matchMedia block.
+      gsap.utils.toArray<HTMLElement>("[data-parallax]").forEach((el) => {
+        const depth = Number(el.dataset.parallax ?? "0.1");
+        gsap.fromTo(
+          el,
+          { yPercent: depth * 100 },
+          {
+            yPercent: depth * -100,
+            ease: "none",
+            scrollTrigger: {
+              trigger: el,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: true,
+              invalidateOnRefresh: true,
+            },
+          },
+        );
+      });
+
       return () => smoother.kill();
     });
 

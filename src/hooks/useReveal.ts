@@ -4,7 +4,8 @@ import { useEffect } from "react";
 
 /**
  * Adds the `is-inview` class to every `.reveal` element when it scrolls into
- * the viewport, driving the CSS fade-up reveal (see globals.css). One-shot.
+ * the viewport, driving the CSS reveal transition (see globals.css — direction
+ * via the `reveal-left/right/down/zoom` modifiers). One-shot.
  */
 export function useReveal() {
   useEffect(() => {
@@ -20,7 +21,7 @@ export function useReveal() {
           if (entry.isIntersecting) {
             const el = entry.target as HTMLElement;
             const delay = el.dataset.revealDelay;
-            if (delay) el.style.animationDelay = `${delay}ms`;
+            if (delay) el.style.transitionDelay = `${delay}ms`;
             el.classList.add("is-inview");
             io.unobserve(el);
           }

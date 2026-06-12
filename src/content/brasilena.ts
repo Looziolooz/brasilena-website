@@ -130,6 +130,14 @@ export const PRODUCTS_INTRO = {
   cta: "Scopri tutti i formati",
 } as const;
 
+/** Closing panel of the pinned horizontal product rail (desktop only). */
+export const PRODUCTS_RAIL_CTA = {
+  title: "Provale tutte",
+  text: "Scrivimi e troviamo il formato giusto per il tuo bar o la tua tavola.",
+  cta: "Contattami",
+  href: "#form",
+} as const;
+
 export const PRODUCTS: Product[] = [
   {
     name: "Bottiglia",

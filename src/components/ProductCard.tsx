@@ -1,18 +1,31 @@
 import Image from "next/image";
 import type { Product } from "@/types/content";
+import { cn } from "@/lib/utils";
 
 /**
  * A single format card (Bottiglia 18/25 cl / Bottiglione 92 cl / Lattina 25 cl).
  * A coloured bubble backdrop (CSS background SVG) with the transparent cutout of
  * the real Brasilena product floating on top. The format and capacity sit in the
- * lower-left corner. Bottle lifts on hover.
+ * lower-left corner. Bottle lifts on hover. `reveal={false}` skips the CSS
+ * scroll-reveal — used in the pinned rail, where GSAP drives the entrance.
  */
-export function ProductCard({ product, index }: { product: Product; index: number }) {
+export function ProductCard({
+  product,
+  index,
+  reveal = true,
+}: {
+  product: Product;
+  index: number;
+  reveal?: boolean;
+}) {
   return (
     <article
-      className="reveal group relative isolate aspect-[389/519] w-full overflow-hidden rounded-[clamp(2.5rem,4vw,5rem)] bg-cover bg-center"
+      className={cn(
+        "group relative isolate aspect-[389/519] w-full overflow-hidden rounded-[clamp(2.5rem,4vw,5rem)] bg-cover bg-center",
+        reveal && "reveal",
+      )}
       style={{ backgroundImage: `url(${product.background})` }}
-      data-reveal-delay={index * 120}
+      data-reveal-delay={reveal ? index * 120 : undefined}
     >
       {/* Transparent cutout of the real product, floating on the colour */}
       <Image
