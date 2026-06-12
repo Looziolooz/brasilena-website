@@ -1,17 +1,18 @@
 import Image from "next/image";
 import { HERO, STORY, GALLERY } from "@/content/brasilena";
 import { PillButton } from "@/components/PillButton";
-import { HeroPour } from "@/components/HeroPour";
+import { BrasilenaScrollSequence } from "@/components/BrasilenaScrollSequence";
 
 /**
- * The yellow opening act, then intro copy, an autoplaying media block, the
- * four-photo gallery and the closing line. Reveals via `.reveal`.
+ * The dark scrollytelling opening act (canvas frame sequence), then intro
+ * copy, an autoplaying media block, the four-photo gallery and the closing
+ * line on the brand yellow. Reveals via `.reveal`.
  */
 export function Hero() {
   return (
     <section className="relative bg-brasilena-yellow text-brasilena-ink">
-      {/* Opening: pinned scroll-scrub of the bottle "stappo" (18 HQ frames) + parallax */}
-      <HeroPour />
+      {/* Opening: pinned canvas scrub — the bottle explodes and reassembles */}
+      <BrasilenaScrollSequence />
 
       {/* Intro copy */}
       <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-[clamp(1.25rem,6vw,6.25rem)] py-[clamp(4rem,10vw,9rem)] md:grid-cols-2 md:items-end">

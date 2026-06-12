@@ -38,6 +38,23 @@ export const HERO_ANIM = {
   ticker: ["Stappa", "Versa", "Brinda"],
 } as const;
 
+/**
+ * Dark scrollytelling hero — a 40-frame canvas sequence (public/frames/) of the
+ * bottle exploding and reassembling, scrubbed by scroll. One line per act;
+ * `lead` is the amber-accented brand word. Copy is intentionally evocative,
+ * not historical.
+ */
+export const HERO_SEQUENCE = {
+  loading: "Caricamento…",
+  scroll: "Scorri",
+  lines: [
+    { align: "center", lead: "Brasilena.", text: "La bibita preferita dai calabresi." },
+    { align: "left", lead: null, text: "Vero espresso calabrese, imbottigliato in acqua minerale dal 1969." },
+    { align: "right", lead: null, text: "Niente concentrati. Solo caffè, bollicine e carattere del Sud." },
+    { align: "center", lead: "Brasilena.", text: "Stappala fredda." },
+  ],
+} as const;
+
 export const STORY = {
   paragraph:
     "Non sono fatta per stare chiusa in dispensa. Sono fatta per le tavolate al sole, le chiacchiere senza fine, la buona compagnia e un caffè da bere ghiacciato.",
