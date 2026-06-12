@@ -77,7 +77,28 @@ export function BrasilenaScrollSequence() {
     const scale = Math.min(width / img.naturalWidth, avail / img.naturalHeight);
     const dw = img.naturalWidth * scale;
     const dh = img.naturalHeight * scale;
-    ctx.drawImage(img, (width - dw) / 2, padTop + (avail - dh) / 2, dw, dh);
+    const dx = (width - dw) / 2;
+    const dy = padTop + (avail - dh) / 2;
+    ctx.drawImage(img, dx, dy, dw, dh);
+
+    // Feather the image edges into the page colour so the 16:9 frame border
+    // (the JPEGs' vignette is never exactly #090909) doesn't read as a box.
+    const TRANSPARENT = "rgba(9,9,9,0)";
+    const fx = dw * 0.07;
+    const fy = dh * 0.09;
+    const edges: Array<[number, number, number, number, number, number, number, number]> = [
+      [dx, dy, fx, dh, dx, 0, dx + fx, 0], // left
+      [dx + dw - fx, dy, fx, dh, dx + dw, 0, dx + dw - fx, 0], // right
+      [dx, dy, dw, fy, 0, dy, 0, dy + fy], // top
+      [dx, dy + dh - fy, dw, fy, 0, dy + dh, 0, dy + dh - fy], // bottom
+    ];
+    for (const [rx, ry, rw, rh, gx0, gy0, gx1, gy1] of edges) {
+      const g = ctx.createLinearGradient(gx0, gy0, gx1, gy1);
+      g.addColorStop(0, BG);
+      g.addColorStop(1, TRANSPARENT);
+      ctx.fillStyle = g;
+      ctx.fillRect(rx, ry, rw, rh);
+    }
     frameRef.current = index;
   }, []);
 
@@ -104,30 +125,10 @@ export function BrasilenaScrollSequence() {
       if (!ready) return;
       const mm = gsap.matchMedia();
 
-      // Pin + scrub wherever motion is allowed (canvas is cheap enough for
-      // mobile, unlike the old 18-DOM-image hero). Reduced-motion never enters
-      // this block: static frame + opening line via the SSR markup.
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const tl = gsap.timeline({
-          defaults: { ease: "none" },
-          scrollTrigger: {
-            trigger: ".bs-pin",
-            start: "top top",
-            end: "+=300%",
-            pin: true,
-            scrub: true,
-            anticipatePin: 1,
-            invalidateOnRefresh: true,
-            onUpdate: (self) => {
-              const next = Math.round(self.progress * (FRAME_COUNT - 1));
-              if (next !== frameRef.current) draw(next);
-            },
-          },
-        });
-
-        // Span the full scrub so position values below read as 0–1 progress.
+      // Text choreography + scroll hint, shared by both breakpoints. Position
+      // values read as 0–1 scrub progress thanks to the duration-1 filler.
+      const addActs = (tl: gsap.core.Timeline) => {
         tl.to({}, { duration: 1 }, 0);
-
         ACTS.forEach((act, i) => {
           const line = `.bs-line-${i}`;
           if (act.in === null) {
@@ -144,12 +145,53 @@ export function BrasilenaScrollSequence() {
             tl.to(line, { opacity: 0, y: -36, duration: 0.08, ease: "power1.in" }, act.out);
           }
         });
-
-        // Scroll hint dissolves as soon as the story starts moving.
         tl.to(".bs-hint", { opacity: 0, duration: 0.05 }, 0.04);
+      };
 
+      const onUpdate = (self: ScrollTrigger) => {
+        const next = Math.round(self.progress * (FRAME_COUNT - 1));
+        if (next !== frameRef.current) draw(next);
+      };
+
+      // Desktop ≥768px: GSAP pin — position:sticky can't work here because
+      // ScrollSmoother transform-offsets the page.
+      mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
+        const tl = gsap.timeline({
+          defaults: { ease: "none" },
+          scrollTrigger: {
+            trigger: ".bs-pin",
+            start: "top top",
+            end: "+=300%",
+            pin: true,
+            scrub: true,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+            onUpdate,
+          },
+        });
+        addActs(tl);
         // Late-created pin (gated on image decode) shifts everything below it
         // — recompute all trigger positions.
+        ScrollTrigger.refresh();
+      });
+
+      // Mobile <768px: no ScrollSmoother, so the stage pins itself with
+      // native position:sticky inside the 400svh wrapper (GSAP pinning on
+      // real touch browsers proved unreliable — the hero froze static).
+      // GSAP only scrubs frames + text against the wrapper's scroll span.
+      mm.add("(max-width: 767.98px) and (prefers-reduced-motion: no-preference)", () => {
+        const tl = gsap.timeline({
+          defaults: { ease: "none" },
+          scrollTrigger: {
+            trigger: ".bs-wrap",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: true,
+            invalidateOnRefresh: true,
+            onUpdate,
+          },
+        });
+        addActs(tl);
         ScrollTrigger.refresh();
       });
 
@@ -160,14 +202,17 @@ export function BrasilenaScrollSequence() {
 
   return (
     <section ref={root} className="relative text-white" style={{ backgroundColor: BG }}>
-      <div className="bs-pin relative h-screen w-full overflow-hidden">
+      {/* Mobile gets a 400svh scroll runway and a sticky stage (native pin);
+          on desktop the wrapper collapses to the stage height and GSAP pins. */}
+      <div className="bs-wrap relative motion-safe:max-md:h-[400svh]">
+        <div className="bs-pin relative h-svh w-full overflow-hidden motion-safe:max-md:sticky motion-safe:max-md:top-0">
         {/* Static fallback frame — covered by the canvas once frames decode;
             the only thing reduced-motion users see. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={frameSrc(0)}
           alt="Bottiglia di Brasilena su fondo scuro"
-          className="absolute inset-x-0 bottom-4 top-[136px] mx-auto h-[calc(100%-152px)] object-contain"
+          className="absolute inset-x-0 bottom-4 top-[136px] mx-auto h-[calc(100%-152px)] object-contain [mask-image:radial-gradient(115%_115%_at_50%_50%,black_62%,transparent_96%)]"
         />
         <canvas
           ref={canvasRef}
@@ -241,6 +286,7 @@ export function BrasilenaScrollSequence() {
               {HERO_SEQUENCE.loading}
             </span>
           </div>
+        </div>
         </div>
       </div>
     </section>
