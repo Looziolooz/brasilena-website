@@ -15,7 +15,7 @@ export default function Home() {
       <SmoothScroll />
 
       {/* Fixed chrome — must stay OUTSIDE #smooth-content for ScrollSmoother */}
-      <Header onDark />
+      <Header pinnedHero />
       <Bubbles className="text-brasilena-ink/25" />
       <CookieBanner />
 

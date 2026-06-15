@@ -8,31 +8,32 @@ import { InstagramIcon, MenuIcon, CloseIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 /**
- * Fixed top bar. Text is dark ink over a light hero (or cream when `onDark` —
- * the homepage's near-black canvas hero), then switches to red on a cream bar
- * once scrolled. The circular Brasilena logo sits on the left; nav links sit
- * on the right with the Instagram icon pinned after them. Hamburger opens a
- * full-screen overlay menu on mobile.
+ * Fixed top bar. Text is dark ink over the light hero, then switches to red on
+ * a cream bar once scrolled. The circular Brasilena logo sits on the left; nav
+ * links sit on the right with the Instagram icon pinned after them. Hamburger
+ * opens a full-screen overlay menu on mobile. `pinnedHero` keeps the bar
+ * transparent for the whole homepage scroll-scrub so it never covers the
+ * popping cap.
  */
-export function Header({ onDark = false }: { onDark?: boolean }) {
+export function Header({ pinnedHero = false }: { pinnedHero?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Over the homepage's pinned canvas hero (`onDark`) the bar must stay
-    // transparent until the whole scrub is done (pin spans ~3 viewports —
-    // keep in sync with BrasilenaScrollSequence's end: "+=300%"), otherwise
-    // the cream bar would cover the popping cap. Reduced-motion has no pin,
-    // so it keeps the standard ~0.85vh switch.
+    // Over the homepage's pinned canvas hero the bar must stay transparent
+    // until the whole scrub is done (pin spans ~3 viewports — keep in sync
+    // with BrasilenaScrollSequence's end: "+=300%"), otherwise the cream bar
+    // would cover the popping cap. Reduced-motion has no pin, so it keeps the
+    // standard ~0.85vh switch.
     const motionOk = window.matchMedia("(prefers-reduced-motion: no-preference)").matches;
-    const factor = onDark && motionOk ? 3.02 : 0.85;
+    const factor = pinnedHero && motionOk ? 3.02 : 0.85;
     const onScroll = () => setScrolled(window.scrollY > window.innerHeight * factor);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [onDark]);
+  }, [pinnedHero]);
 
-  const tone = scrolled ? "text-brasilena-red" : onDark ? "text-brasilena-cream" : "text-brasilena-ink";
+  const tone = scrolled ? "text-brasilena-red" : "text-brasilena-ink";
 
   return (
     <>
