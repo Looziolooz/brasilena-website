@@ -15,8 +15,32 @@ gsap.registerPlugin(ScrollTrigger, SplitText, useGSAP);
 
 const { kicker, headline, lede, ctas, acts, chips, ticker, scroll, alt } = HERO_SEQUENCE;
 
-const FRAME_COUNT = 18;
-const frameSrc = (i: number) => `/images/brasilena/pop-${i + 1}.webp`;
+// 49 frames, motion-interpolated from the 18 shot frames with ffmpeg
+// minterpolate (see scripts/build-hero-frames.sh). 18 frames spread over the
+// pin worked out to ~170px of scroll each, which read as stepping rather than
+// pouring; at 49 it is ~58px and the liquid moves continuously.
+const FRAME_COUNT = 49;
+
+// Two renditions of the same sequence. The 960px set is *lighter than the old
+// 18-frame one* (760KB vs 896KB) and covers every phone, tablet and non-retina
+// desktop; only genuinely high-density stages pay for the 1600px set.
+const FRAME_SETS = { lo: 960, hi: 1600 } as const;
+const frameSrcIn = (dir: number, i: number) =>
+  `/frames-pop/${dir}/f-${String(i + 1).padStart(3, "0")}.webp`;
+
+// The paint-holder under the canvas. Always the light set: it is on screen only
+// until the first frame decodes, and picking it at render time instead would
+// mean either a hydration mismatch or a cascading re-render.
+const FALLBACK_SRC = frameSrcIn(FRAME_SETS.lo, 0);
+
+/** Widest the artwork is ever painted, in device pixels, at this viewport. */
+function stageDevicePx() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  // Mirrors the stage's own CSS box: the column capped at 32rem below `lg`,
+  // ~55% of the viewport once the two-column layout kicks in.
+  const css = window.innerWidth >= 1024 ? window.innerWidth * 0.55 : Math.min(window.innerWidth * 0.92, 512);
+  return css * dpr;
+}
 
 // The frames are already flattened on the brand yellow, so the canvas
 // letterbox is invisible against the section behind it.
@@ -77,10 +101,11 @@ const MASK_TRAVEL = 165;
 const BEAT_STARTS = [0, ...acts.map((a) => a.at)];
 
 /**
- * The hero: a pinned, scroll-scrubbed "stappo" on the brand yellow. Eighteen
+ * The hero: a pinned, scroll-scrubbed "stappo" on the brand yellow. Forty-nine
  * frames of the bottle popping are drawn on a <canvas> (one bitmap blit per
- * tick beats swapping 18 DOM layers), the copy column swaps beat by beat with
- * SplitText masked-line type, and pill labels pop in around the splash.
+ * tick beats stacking that many DOM layers), the copy column swaps beat by
+ * beat with SplitText masked-line type, and pill labels pop in around the
+ * splash.
  *
  * The motion layers, roughly outside-in:
  *  - a scrubbed master timeline drives the frames, the copy acts, the chips,
@@ -108,11 +133,12 @@ export function BrasilenaScrollSequence() {
   const [armed, setArmed] = useState(false);
 
   useEffect(() => {
+    const dir = stageDevicePx() > 1000 ? FRAME_SETS.hi : FRAME_SETS.lo;
     let cancelled = false;
     let done = 0;
     imagesRef.current = Array.from({ length: FRAME_COUNT }, (_, i) => {
       const img = new window.Image();
-      img.src = frameSrc(i);
+      img.src = frameSrcIn(dir, i);
       img
         .decode()
         .catch(() => undefined)
@@ -306,9 +332,23 @@ export function BrasilenaScrollSequence() {
         const counter = q(".bs-counter-now")[0];
         let shownBeat = -1;
 
+        // The liquid has mass, so it does not land on the new scroll position
+        // instantly — it chases it. Driving the frame index through a damped
+        // follower (rather than reading progress straight off the scrub) also
+        // means the canvas repaints on GSAP's ticker for the whole catch-up,
+        // so a flick keeps rendering after the finger has left the screen.
+        const liquid = { frame: 0 };
+        const chaseLiquid = gsap.quickTo(liquid, "frame", {
+          duration: isPinned ? 0.2 : 0.3,
+          ease: "power2.out",
+          onUpdate: () => {
+            const n = Math.round(liquid.frame);
+            if (n !== frameRef.current) draw(n);
+          },
+        });
+
         const onUpdate = (self: ScrollTrigger) => {
-          const nextFrame = Math.round(self.progress * (FRAME_COUNT - 1));
-          if (nextFrame !== frameRef.current) draw(nextFrame);
+          chaseLiquid(self.progress * (FRAME_COUNT - 1));
 
           const velocity = self.getVelocity();
           const nextSkew = clampSkew(velocity / -520);
@@ -610,7 +650,7 @@ export function BrasilenaScrollSequence() {
                   {/* Static first frame — carries the paint until the canvas
                       has something to show, and the fallback if it never does. */}
                   <Image
-                    src={frameSrc(0)}
+                    src={FALLBACK_SRC}
                     alt={alt}
                     fill
                     priority
