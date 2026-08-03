@@ -168,6 +168,44 @@ html.lenis body {
   line-height: 0.85;
 }
 
+/* SplitText masks each line to its own line box. Teko is set well below 1.0
+   leading, so its glyphs are taller than that box and the mask shaves the
+   accents off (CAFFÈ → CAFFE). Pad each line to give the mask room, pull the
+   same amount back off the stack, then hand it to the host as bottom padding —
+   the block keeps its exact original box, and the type does not move. Apply
+   both classes together: `.hero-split` on the element that gets split,
+   `.hero-split-line` via SplitText's `linesClass`. */
+/* Nothing here may set margin-top: this file is unlayered, so it would
+   silently beat Tailwind's `mt-*` on the same element. */
+.hero-split {
+  padding-bottom: 0.24em;
+}
+.hero-split-line {
+  padding-top: 0.24em;
+  margin-bottom: -0.24em;
+}
+
+/* ---- Hero kinetic layer ----
+   Elements the hero's GSAP intro takes ownership of. They start hidden in CSS
+   (not inline JS) so nothing can flash in before the choreography arms — the
+   intro only runs once the webfonts have settled and SplitText has measured
+   the lines. Reduced motion never runs that intro, so there they stay put. */
+.hero-veil {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-veil {
+    opacity: 1;
+  }
+}
+
+/* Pure motion garnish (the pop flash, its shockwave, the droplets). Unlike
+   .hero-veil these have no still state worth showing: hidden before the intro
+   arms, and hidden for good under reduced motion. */
+.hero-fx {
+  opacity: 0;
+}
+
 /* Hide scrollbars on horizontal scrollers */
 .no-scrollbar {
   scrollbar-width: none;

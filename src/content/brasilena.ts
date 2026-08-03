@@ -1,4 +1,12 @@
-import type { NavLink, GalleryItem, Product, FooterColumn, TimelineEntry } from "@/types/content";
+import type {
+  NavLink,
+  GalleryItem,
+  Product,
+  FooterColumn,
+  TimelineEntry,
+  HeroChip,
+  HeroAct,
+} from "@/types/content";
 
 export const SITE = {
   title: "Brasilena | La bibita al caffè dei Calabresi",
@@ -18,9 +26,9 @@ export const NAV: NavLink[] = [
 export const HERO = {
   title: ["La bibita", "preferita", "dai calabresi"],
   intro:
-    "Quasi cent'anni negli stessi bar, negli stessi bicchieri. Certe cose non passano di moda perché non sono mai state una moda.",
-  cta: "Scopri le mie bibite",
-  scroll: "Scorri",
+    "Non chiamatemi vintage. Sono negli stessi bar da quasi cent'anni perché certe cose nascono già giuste, e non hanno mai avuto bisogno di essere di moda.",
+  cta: "Guarda i formati",
+  scroll: "Scrolla",
 } as const;
 
 /**
@@ -39,19 +47,63 @@ export const HERO_ANIM = {
 } as const;
 
 /**
- * Dark scrollytelling hero — a 40-frame canvas sequence (public/frames/) of the
- * bottle exploding and reassembling, scrubbed by scroll. One line per act;
- * `lead` is the amber-accented brand word. Copy is intentionally evocative,
- * not historical.
+ * Opening act — a pinned, scroll-scrubbed "stappo" on the brand yellow: the cap
+ * flies, the coffee arcs out across 18 frames, and the copy swaps beat by beat
+ * while pill labels pop in around the splash.
+ *
+ * Voice: written for a young audience — short, spoken, a little cheeky. The
+ * brand is old, the tone isn't: the age is the flex, never the nostalgia.
+ *
+ * `at` / `out` are positions on the 0–1 scrub, so they read as "how far down
+ * the pinned hero". Keep them ordered and clear of POP_AT in the component.
  */
 export const HERO_SEQUENCE = {
-  loading: "Caricamento…",
-  scroll: "Scorri",
-  lines: [
-    { align: "center", lead: "Brasilena.", text: "La bibita preferita dai calabresi." },
-    { align: "left", lead: null, text: "Vero espresso calabrese, imbottigliato in acqua minerale dal 1969." },
-    { align: "right", lead: null, text: "Niente concentrati. Solo caffè, bollicine e carattere del Sud." },
-    { align: "center", lead: "Brasilena.", text: "Stappala fredda." },
+  kicker: "Gassosa al caffè · Calabria · dal 1930",
+  /** Act 0 headline — one entry per masked line; `accent` renders brand red. */
+  headline: [
+    { text: "Il caffè freddo", accent: false },
+    { text: "prima che", accent: false },
+    { text: "fosse hype", accent: true },
+  ],
+  lede: "Caffè vero, acqua delle sorgenti calabresi, bollicine.",
+  ctas: [
+    { label: "Le mie bibite", href: "#prodotti", tone: "ink" },
+    { label: "La mia gente", href: "#la-mia-gente", tone: "red" },
+  ],
+  scroll: "Scrolla",
+  alt: "Bottiglia di Brasilena che si stappa e il caffè che schizza fuori",
+  acts: [
+    {
+      title: ["Tre ingredienti.", "Zero pose."],
+      text: "Niente concentrati, niente aromi inventati in laboratorio. Se sai leggere un'etichetta, questa la finisci in due secondi.",
+      at: 0.24,
+      out: 0.42,
+    },
+    {
+      title: ["Non è un energy.", "È un rito."],
+      text: "Quella cosa che ordini quando è tardi per un caffè ed è presto per tutto il resto. Poi ne ordini un'altra.",
+      at: 0.5,
+      out: 0.68,
+    },
+    {
+      title: ["Stappa. Condividi.", "Ripeti."],
+      text: "Una regola sola: ghiacciata. Su questo non si tratta.",
+      at: 0.78,
+      out: null,
+      cta: { label: "Guarda i formati", href: "#prodotti" },
+    },
+  ] satisfies HeroAct[],
+  chips: [
+    { label: "Stappa", at: 0.14, left: "40%", top: "10%", rot: -7, tone: "red" },
+    { label: "Versa", at: 0.46, left: "-1%", top: "40%", rot: 5, tone: "ink" },
+    { label: "Brinda", at: 0.72, left: "58%", top: "50%", rot: -4, tone: "sand" },
+  ] satisfies HeroChip[],
+  ticker: [
+    "Ghiacciata sempre",
+    "Zero concentrati",
+    "Caffè vero, non aromi",
+    "Dal 1930",
+    "Nata in Calabria",
   ],
 } as const;
 
