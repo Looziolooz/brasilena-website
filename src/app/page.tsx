@@ -1,4 +1,5 @@
 import { SmoothScroll } from "@/components/SmoothScroll";
+import { HeroGate } from "@/components/HeroGate";
 import { Bubbles } from "@/components/Bubbles";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
@@ -15,6 +16,7 @@ export default function Home() {
       <SmoothScroll />
 
       {/* Fixed chrome — must stay OUTSIDE #smooth-content for ScrollSmoother */}
+      <HeroGate />
       <Header pinnedHero />
       <Bubbles className="text-brasilena-ink/25" />
       <CookieBanner />

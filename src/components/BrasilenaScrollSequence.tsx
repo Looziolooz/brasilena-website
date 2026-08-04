@@ -7,6 +7,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import { useGSAP } from "@gsap/react";
 import { HERO_SEQUENCE } from "@/content/brasilena";
+import { HERO_OPEN_EVENT } from "@/components/HeroGate";
 import { PillButton } from "@/components/PillButton";
 import { BubbleIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,32 @@ const frameSrcIn = (dir: number, i: number) =>
 // mean either a hydration mismatch or a cascading re-render.
 const FALLBACK_SRC = frameSrcIn(FRAME_SETS.lo, 0);
 
+/**
+ * Where the bottle waits before the visitor opens the gate: upright, lined up
+ * with the middle of the screen, and parked above the top edge so it can drop
+ * in. Because the frames are flattened on exactly the page's yellow, the canvas
+ * can be rotated and shifted freely — only the bottle is ever visible moving,
+ * never the frame's rectangular edge.
+ *
+ * Measured from the stage's untransformed box, so call it before setting any
+ * transform on it.
+ */
+function dropPose(stage: Element) {
+  const r = stage.getBoundingClientRect();
+  const anchorX = r.left + r.width * (BOTTLE.x / 100);
+  const anchorY = r.top + r.height * (BOTTLE.y / 100);
+  return {
+    x: window.innerWidth / 2 - anchorX,
+    // Clear of the top edge by a third of a screen, so the fall has somewhere
+    // to come from however tall the viewport is.
+    y: -anchorY - window.innerHeight * 0.35,
+    rotation: UPRIGHT,
+    // The stacked layout renders the stage small, so the bottle needs more
+    // scale there to read on its own.
+    scale: window.innerWidth >= 1024 ? 1.15 : 1.5,
+  };
+}
+
 /** Widest the artwork is ever painted, in device pixels, at this viewport. */
 function stageDevicePx() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -48,6 +75,14 @@ const BG = "#ffcc00";
 const STAGE_RATIO = "1600 / 1288";
 // Where the bottle neck sits inside the frame — the pop FX are anchored here.
 const NECK = { left: "40%", top: "66%" };
+
+// Where the bottle actually sits inside frame 1, measured off the pixels rather
+// than eyeballed: centroid at 19.3%/81.8% of the frame box, long axis at -28.8°
+// from horizontal. The intro pivots the stage about that centroid, so the
+// bottle turns on itself instead of swinging through an arc.
+const BOTTLE = { x: 19.3, y: 81.8, axisDeg: -28.8 };
+/** Rotation that stands the bottle upright, for the intro to unwind. */
+const UPRIGHT = -90 - BOTTLE.axisDeg;
 
 /** Scrub progress where the cap leaves the bottle (frame 4 of 18). */
 const POP_AT = 0.19;
@@ -131,6 +166,10 @@ export function BrasilenaScrollSequence() {
   // get cut to the fallback face. A slow font must never hold the hero, so the
   // arming races a timeout.
   const [armed, setArmed] = useState(false);
+  // The visitor opens the hero themselves. Nothing behind the gate animates
+  // until they do — including the scrub, which the gate's scroll lock would
+  // measure wrong anyway.
+  const [started, setStarted] = useState(false);
 
   useEffect(() => {
     const dir = stageDevicePx() > 1000 ? FRAME_SETS.hi : FRAME_SETS.lo;
@@ -152,6 +191,15 @@ export function BrasilenaScrollSequence() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // HeroGate owns the opening screen (it has to live outside #smooth-content —
+  // see the note there) and tells us when the visitor lets the bottle in.
+  useEffect(() => {
+    const open = () => setStarted(true);
+    window.addEventListener(HERO_OPEN_EVENT, open);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) open();
+    return () => window.removeEventListener(HERO_OPEN_EVENT, open);
   }, []);
 
   useEffect(() => {
@@ -220,6 +268,19 @@ export function BrasilenaScrollSequence() {
     return () => ro.disconnect();
   }, [draw]);
 
+  // Runs in a layout effect on mount, so the very first paint already has the
+  // bottle parked off-screen behind the gate. Waiting for `armed` (which waits
+  // on webfonts) would flash the assembled hero first.
+  useGSAP(
+    () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const stage = gsap.utils.selector(root)(".bs-stage")[0];
+      if (!stage) return;
+      gsap.set(stage, { transformOrigin: `${BOTTLE.x}% ${BOTTLE.y}%`, ...dropPose(stage) });
+    },
+    { scope: root },
+  );
+
   useGSAP(
     () => {
       if (!armed) return;
@@ -239,6 +300,9 @@ export function BrasilenaScrollSequence() {
           draw(FRAME_COUNT - 1);
           return;
         }
+
+        // Still behind the gate: leave the bottle parked and build nothing.
+        if (!started) return;
 
         const teardown: Array<() => void> = [];
 
@@ -271,21 +335,28 @@ export function BrasilenaScrollSequence() {
         gsap.set(q(".bs-drop"), { opacity: 0, x: 0, y: 0, scale: 0.2 });
 
         // ---- 2. the load-in --------------------------------------------------
-        gsap
-          .timeline({ defaults: { ease: "expo.out" }, delay: 0.12 })
-          .to(q(".bs-rule"), { scaleX: 1, duration: 0.9 }, 0)
-          .to(q(".bs-kicker-text"), { opacity: 1, y: 0, duration: 0.8 }, 0.05)
-          .to(heroSplit.words, { yPercent: 0, rotate: 0, duration: 1.2, stagger: 0.05 }, 0.1)
-          .fromTo(
+        // The bottle drops in from above the top edge, unwinding out of upright
+        // into the hero's composition as it falls. Only once it has landed does
+        // the copy assemble — type arriving mid-fall would compete with it.
+        const FLIGHT = 1.35;
+        const LANDED = FLIGHT * 0.62;
+
+        const intro = gsap
+          .timeline({ defaults: { ease: "expo.out" } })
+          .to(
             q(".bs-stage"),
-            { scale: 1.08, yPercent: 3 },
-            { scale: 1, yPercent: 0, duration: 1.6, ease: "power3.out" },
+            // power4.out drops it fast and lets it settle long, which reads as
+            // weight. An ease-in would look more like gravity but stops dead.
+            { x: 0, y: 0, rotation: 0, scale: 1, duration: FLIGHT, ease: "power4.out" },
             0,
           )
-          .to(q(".bs-lede"), { opacity: 1, y: 0, duration: 1 }, 0.5)
-          .to(q(".bs-cta-row"), { opacity: 1, y: 0, duration: 1 }, 0.62)
-          .to(q(".bs-ticker"), { opacity: 1, yPercent: 0, duration: 1.1 }, 0.7)
-          .to([q(".bs-hud"), q(".bs-hint")], { opacity: 1, duration: 0.8 }, 0.85);
+          .to(q(".bs-rule"), { scaleX: 1, duration: 0.9 }, LANDED)
+          .to(q(".bs-kicker-text"), { opacity: 1, y: 0, duration: 0.8 }, LANDED + 0.05)
+          .to(heroSplit.words, { yPercent: 0, rotate: 0, duration: 1.2, stagger: 0.05 }, LANDED + 0.1)
+          .to(q(".bs-lede"), { opacity: 1, y: 0, duration: 1 }, LANDED + 0.5)
+          .to(q(".bs-cta-row"), { opacity: 1, y: 0, duration: 1 }, LANDED + 0.62)
+          .to(q(".bs-ticker"), { opacity: 1, yPercent: 0, duration: 1.1 }, LANDED + 0.7)
+          .to([q(".bs-hud"), q(".bs-hint")], { opacity: 1, duration: 0.8 }, LANDED + 0.85);
 
         // Chips breathe on their own, independently of the scrub that reveals
         // them — the float lives on an inner span so the two never fight over
@@ -299,6 +370,38 @@ export function BrasilenaScrollSequence() {
             repeat: -1,
           });
         });
+
+        // ---- 2b. idle rock ---------------------------------------------------
+        // Before the first scroll the artwork is just a capped bottle in a lot
+        // of empty frame, so it gets to breathe. It pivots near its own base
+        // rather than the stage centre, which reads as rocking rather than
+        // swinging. The moment the pour starts this has to be gone: from there
+        // on the frames own the bottle's angle, and a second rotation on top
+        // would drag the splash off its trajectory.
+        // Nowhere near the ±30° of a free-floating PNG: the bottle lives inside
+        // a fixed frame here, so a wide swing would carry it out of the canvas.
+        gsap.set(q(".bs-stage-idle"), { transformOrigin: "26% 88%", rotation: -4, y: 13 });
+        // Held back until the bottle has landed — rocking mid-flight reads as
+        // wobble, not as life.
+        const idle = gsap
+          .timeline({ repeat: -1, yoyo: true, delay: LANDED + 0.6 })
+          .to(q(".bs-stage-idle"), { rotation: 4, y: -13, duration: 4.2, ease: "sine.inOut" });
+
+        let rocking = true;
+        const setRocking = (on: boolean) => {
+          if (on === rocking) return;
+          rocking = on;
+          if (on) {
+            idle.play();
+          } else {
+            // Scrolling during the opening flight means the visitor is past
+            // caring about it: snap the whole intro to its end rather than let
+            // it keep animating against the scrub.
+            if (intro.isActive()) intro.progress(1);
+            idle.pause();
+            gsap.to(q(".bs-stage-idle"), { rotation: 0, y: 0, duration: 0.5, ease: "power2.out" });
+          }
+        };
 
         // ---- 3. scroll-velocity reactions ------------------------------------
         // Fast flicks shear the copy column and whip the ticker along; both
@@ -349,6 +452,10 @@ export function BrasilenaScrollSequence() {
 
         const onUpdate = (self: ScrollTrigger) => {
           chaseLiquid(self.progress * (FRAME_COUNT - 1));
+          // Hysteresis: without the gap between the two thresholds, resting
+          // exactly on the boundary would flicker the rock on and off.
+          if (self.progress > 0.015) setRocking(false);
+          else if (self.progress < 0.004) setRocking(true);
 
           const velocity = self.getVelocity();
           const nextSkew = clampSkew(velocity / -520);
@@ -540,7 +647,7 @@ export function BrasilenaScrollSequence() {
       ScrollTrigger.refresh();
       return () => mm.revert();
     },
-    { dependencies: [armed], scope: root },
+    { dependencies: [armed, started], scope: root },
   );
 
   return (
@@ -646,18 +753,23 @@ export function BrasilenaScrollSequence() {
               style={{ aspectRatio: STAGE_RATIO }}
             >
               <div className="bs-stage-inner absolute inset-0 will-change-transform">
-                <div className="bs-stage-punch absolute inset-0 will-change-transform">
-                  {/* Static first frame — carries the paint until the canvas
-                      has something to show, and the fallback if it never does. */}
-                  <Image
-                    src={FALLBACK_SRC}
-                    alt={alt}
-                    fill
-                    priority
-                    sizes="(max-width: 767px) 92vw, 58vw"
-                    className="object-contain"
-                  />
-                  <canvas ref={canvasRef} aria-hidden className="absolute inset-0 size-full" />
+                {/* Idle rock, live only before the pour starts. Wraps just the
+                    artwork — the chips and the pop FX are siblings, so they
+                    keep their own motion. */}
+                <div className="bs-stage-idle absolute inset-0 will-change-transform">
+                  <div className="bs-stage-punch absolute inset-0 will-change-transform">
+                    {/* Static first frame — carries the paint until the canvas
+                        has something to show, and the fallback if it never does. */}
+                    <Image
+                      src={FALLBACK_SRC}
+                      alt={alt}
+                      fill
+                      priority
+                      sizes="(max-width: 767px) 92vw, 58vw"
+                      className="object-contain"
+                    />
+                    <canvas ref={canvasRef} aria-hidden className="absolute inset-0 size-full" />
+                  </div>
                 </div>
 
                 {/* Pop FX — anchored on the bottle neck. */}
@@ -703,6 +815,7 @@ export function BrasilenaScrollSequence() {
               </div>
             </div>
           </div>
+
 
           {/* ---------- HUD: beat counter + progress rail ---------- */}
           <div className="bs-hud hero-veil pointer-events-none absolute bottom-18 right-[clamp(1.25rem,5vw,4.5rem)] z-20 hidden items-center gap-3 motion-safe:flex">

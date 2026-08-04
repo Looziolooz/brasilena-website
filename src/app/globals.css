@@ -206,6 +206,7 @@ html.lenis body {
   opacity: 0;
 }
 
+
 /* Hide scrollbars on horizontal scrollers */
 .no-scrollbar {
   scrollbar-width: none;

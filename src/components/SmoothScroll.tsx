@@ -10,7 +10,8 @@ import { useReveal } from "@/hooks/useReveal";
 gsap.registerPlugin(ScrollTrigger, ScrollSmoother, useGSAP);
 
 // Where anchored sections land below the fixed header (mirrors the hero CTAs).
-const ANCHOR_OFFSET = "top 88px";
+const HEADER_CLEARANCE = 88;
+const ANCHOR_OFFSET = `top ${HEADER_CLEARANCE}px`;
 
 /** Resolve an `<a href>` to an in-page selector ("#x" or "/#x"), else null. */
 function anchorSelector(href: string | null): string | null {
@@ -26,10 +27,24 @@ function scrollToSelector(selector: string, smooth: boolean) {
   // A section can opt into being centred in the viewport (e.g. a form that is
   // vertically centred in a tall section) via `data-scroll-align="center"`;
   // everything else lands its top just below the fixed header.
-  const centered = el.dataset.scrollAlign === "center";
+  //
+  // Centring only makes sense while the section still fits under the header —
+  // past that, centring pushes its heading up behind the fixed bar, so fall
+  // back to top-aligning. And even when it does fit, centre it in the space
+  // *below* the header rather than in the raw viewport.
+  const centered =
+    el.dataset.scrollAlign === "center" &&
+    el.getBoundingClientRect().height <= window.innerHeight - HEADER_CLEARANCE;
   const smoother = ScrollSmoother.get();
-  if (smoother) smoother.scrollTo(selector, smooth, centered ? "center center" : ANCHOR_OFFSET);
-  else el.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: centered ? "center" : "start" });
+  if (smoother) {
+    smoother.scrollTo(
+      selector,
+      smooth,
+      centered ? `center center+=${HEADER_CLEARANCE / 2}` : ANCHOR_OFFSET,
+    );
+  } else {
+    el.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: centered ? "center" : "start" });
+  }
   return true;
 }
 

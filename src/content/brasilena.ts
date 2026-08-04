@@ -23,6 +23,25 @@ export const NAV: NavLink[] = [
   { label: "Contatti", href: "/#form" },
 ];
 
+/**
+ * Loading state. "Si raffredda" beats a literal "Caricamento": the hero's whole
+ * argument is that this drink is only worth drinking ghiacciata, so the wait
+ * gets framed as the bottle chilling rather than as a spinner.
+ */
+export const LOADER = {
+  label: "Si raffredda…",
+} as const;
+
+/**
+ * The click gate the homepage opens on. The invitation is the brand's own
+ * imperative rather than a generic "enter" — the whole hero is about opening a
+ * bottle, so the gesture that starts it should be the same verb.
+ */
+export const HERO_GATE = {
+  action: "Stappa",
+  hint: "Premi per entrare",
+} as const;
+
 export const HERO = {
   title: ["La bibita", "preferita", "dai calabresi"],
   intro:
