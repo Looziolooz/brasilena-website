@@ -1,5 +1,14 @@
 # Brasilena
 
+<!-- looz-design-credit -->
+> Progettato e sviluppato da **[LOoz.design](https://looz.design/?utm_source=github&utm_medium=referral&utm_campaign=readme)**: siti web, gestionali e agenti AI per piccole attività.
+> *Designed and built by LOoz.design: websites, management tools and AI agents for small businesses.*
+>
+> **Demo online:** https://brasilena-website.vercel.app/ · **Scheda del progetto · Case study:** https://looz.design/work/brasilena
+
+> Concept indipendente a scopo dimostrativo, non affiliato al marchio citato. *Independent concept, not affiliated with the brand.*
+<!-- /looz-design-credit -->
+
 > Anima brasiliana, Cuore calabrese
 
 ---
